@@ -9,6 +9,7 @@ public interface WalletRepository extends JpaRepository<Wallet,Integer> {
     Wallet findByUserName(String userName);
 
     @Modifying
-    @Query("select wallet w from wallets set w.amount=w.amount+:amount where w.userName=:userName")
+    @Query("select wallet w from wallets set w.balance=w.balance+ :amount where w.userName=:userName")
     int updateWallet(String userName,int amount);
+
 }

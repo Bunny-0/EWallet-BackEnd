@@ -2,6 +2,7 @@ package com.example.EWalletProject;
 
 import lombok.*;
 
+import javax.persistence.Table;
 import javax.persistence.*;
 
 @Entity
@@ -9,13 +10,14 @@ import javax.persistence.*;
 @Setter
 @Builder
 @NoArgsConstructor
+@Table(name = "wallets")
 @AllArgsConstructor
 public class Wallet {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
-    String userName;
-    int amount;
+    private int id;
+    private String userName;
+    private int balance;
 
 }
