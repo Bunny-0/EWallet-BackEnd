@@ -11,7 +11,8 @@ public class TransactionController {
     @Autowired
     TransactionService transactionService;
     @PostMapping("/create")
-    public void createTransaction(@RequestBody TransactionRequest transactionRequest){
+    public void createTransaction(@RequestBody() TransactionRequest transactionRequest){
+        transactionService.createTransaction(transactionRequest);
 
     }
 }

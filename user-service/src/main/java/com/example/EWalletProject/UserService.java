@@ -34,7 +34,7 @@ public class UserService {
         JSONObject walletRequest=new JSONObject();
         walletRequest.put("userName",user.getUserName());
         String message=walletRequest.toString();
-        kafkaTemplate.send("create",message);
+        kafkaTemplate.send("create_wallet",message);
 
     }
 

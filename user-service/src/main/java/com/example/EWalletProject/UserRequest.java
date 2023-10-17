@@ -1,10 +1,10 @@
 package com.example.EWalletProject;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class UserRequest {
     private String userName;

@@ -10,7 +10,7 @@ import javax.persistence.*;
 @Setter
 @Builder
 @NoArgsConstructor
-@Table(name = "wallets")
+@Table(name = "wallet")
 @AllArgsConstructor
 public class Wallet {
 

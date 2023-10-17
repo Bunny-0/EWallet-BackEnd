@@ -29,7 +29,6 @@ public class WalletService {
         Wallet wallet=Wallet.builder().userName(userName).balance(0).build();
         walletRepository.save(wallet);
 
-
     }
 
     @KafkaListener(topics = {"update_wallet"},groupId = "friends_group")
@@ -39,29 +38,37 @@ public class WalletService {
         String toUser=(String)walletRequest.get("toUser");
         int transactionAmount=(Integer)walletRequest.get("amount");
         String transactionId=(String)walletRequest.get("transactionId");
-
         //Check balance from user
         //deduct the senders money
         //if fail then send status as fail(if balanceis not sufficient otherwise deduct the semders money , add the receivers money send teh status success
         Wallet sendersWallet=walletRepository.findByUserName(fromUser);
         if(sendersWallet.getBalance()>=transactionAmount){
-            walletRepository.updateWallet(fromUser,-1*transactionAmount);
-            walletRepository.updateWallet(toUser,transactionAmount);
+
+            Wallet fromWallet=walletRepository.findByUserName(fromUser);
+            fromWallet.setBalance(fromWallet.getBalance()-transactionAmount);
+            walletRepository.save(fromWallet);
+
+            Wallet toWallet=walletRepository.findByUserName(toUser);
+            toWallet.setBalance(toWallet.getBalance()+transactionAmount);
+            walletRepository.save(toWallet);
+
+//            walletRepository.updateWallet(fromUser,-1*transactionAmount);
+//            walletRepository.updateWallet(toUser,transactionAmount);
 
             //PushTokafka
             JSONObject sendToTransaction =new JSONObject();
             sendToTransaction.put("transactionId",transactionId);
             sendToTransaction.put("transactionStatus","SUCCESS");
-            String SendMessage=sendToTransaction.toString();
-            kafkaTemplate.send("update_transaction",SendMessage);
+            String sendMessage=sendToTransaction.toString();
+            kafkaTemplate.send("update_transaction",sendMessage);
 
         }else{
 
             JSONObject sendToTransaction =new JSONObject();
             sendToTransaction.put("transactionId",transactionId);
             sendToTransaction.put("transactionStatus","FAILED");
-            String SendMessage=sendToTransaction.toString();
-            kafkaTemplate.send("update_transaction",SendMessage);
+            String sendMessage=sendToTransaction.toString();
+            kafkaTemplate.send("update_transaction",sendMessage);
 
         }
 

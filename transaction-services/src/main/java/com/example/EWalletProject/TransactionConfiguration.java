@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Properties;
 
@@ -43,5 +44,10 @@ public class TransactionConfiguration {
     @Bean
     KafkaTemplate<String, String> getKafkaTemplate(){
         return new KafkaTemplate<>(getProducerFactory());
+    }
+
+    @Bean
+    RestTemplate getRestTemplate(){
+        return new RestTemplate();
     }
 }

@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "transactions")
+@Table(name = "transaction")
 public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +23,8 @@ public class Transaction {
     private int amount;
     private String toUser;
     private String fromUser;
-    private TransactionStatus transactionStatus;
+//    private TransactionStatus transactionStatus;
+    private String transactionStatus;
     private String transactionTime;
 
 
