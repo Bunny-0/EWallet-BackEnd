@@ -1,0 +1,51 @@
+server:
+  port: 9045
+
+spring:
+  application:
+    name: contract-service
+  zipkin:
+    base-url: http://localhost:9412
+    enabled: true
+  sleuth:
+    sampler:
+      probability: 1.0
+  datasource:
+    url: jdbc:mysql://localhost:3306/contractDb
+    username: root
+    password: MyNewPassword
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  data:
+    elasticsearch:
+      client:
+        reactive:
+          endpoints: localhost:9200
+      repositories:
+        enabled: true
+
+  elasticsearch:
+    uris: http://localhost:9200
+
+logging:
+  file:
+    name: C:\Users\Hewlett Packard\Downloads\EWalletProject\EWalletProject\logs\contract-service.log
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.springframework.cloud.sleuth: DEBUG
+    org.springframework.cloud.sleuth.instrument: DEBUG
+    org.springframework.cloud.sleuth.instrument.web.client.TraceRestTemplateInterceptor: DEBUG
+
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [${PID}] [thread=%t] [traceId=%X{X-B3-TraceId}, spanId=%X{X-B3-SpanId}] %logger{36} - %msg%n"
+
+

@@ -1,0 +1,41 @@
+server:
+  port: 8076
+
+spring:
+  application:
+    name: user-service
+  zipkin:
+    base-url: http://localhost:9412
+    enabled: true
+  sleuth:
+    sampler:
+      probability: 1.0
+
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/userdb?createTableIfNotExists=true
+    username: root
+    password: MyNewPassword
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 25
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: true
+
+logging:
+  file:
+    name: C:\Users\Hewlett Packard\Downloads\EWalletProject\EWalletProject\logs\user-service.log
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.springframework.cloud.sleuth: DEBUG
+    org.springframework.cloud.sleuth.instrument: DEBUG
+    org.springframework.cloud.sleuth.instrument.web.client.TraceRestTemplateInterceptor: DEBUG
+
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [${PID}] [thread=%t] [traceId=%X{X-B3-TraceId}, spanId=%X{X-B3-SpanId}] %logger{36} - %msg%n"
+
+

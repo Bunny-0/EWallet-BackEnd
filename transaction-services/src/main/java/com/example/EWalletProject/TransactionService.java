@@ -32,7 +32,7 @@ public class TransactionService {
     public void createTransaction(TransactionRequest transactionRequest){
         Transaction transaction=Transaction.builder().toUser(transactionRequest.getToUser()).fromUser(transactionRequest.getFromUser()).transactionStatus("PENDING").amount(transactionRequest.getAmount()).transactionId(UUID.randomUUID().toString()).transactionTime(String.valueOf(new Date())).build();
         transactionRepository.save(transaction);
-        //sedn the message to kafka to update the wallet
+        //send the message to kafka to update the wallet
         //send the message to kafka to update the wallet
         JSONObject walletRequest=new JSONObject();
         walletRequest.put("fromUser",transactionRequest.getFromUser());

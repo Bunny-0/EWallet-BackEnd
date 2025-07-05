@@ -2,6 +2,7 @@ package com.example.EWalletProject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import javax.persistence.Table;
 
 @Service
+@Slf4j
 public class WalletService {
 
     @Autowired
@@ -24,6 +26,10 @@ public class WalletService {
 
     public void createWallet(String message) throws JsonProcessingException {
 
+        log.info(
+                "Received message to create wallet: {}",
+                message
+        );
         JSONObject walletRequest=objectMapper.readValue(message,JSONObject.class);
         String userName=(String)walletRequest.get("userName");
         Wallet wallet=Wallet.builder().userName(userName).balance(0).build();

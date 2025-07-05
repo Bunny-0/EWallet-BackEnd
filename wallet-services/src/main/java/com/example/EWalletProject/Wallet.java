@@ -19,5 +19,6 @@ public class Wallet {
     private int id;
     private String userName;
     private int balance;
+    private String productType;
 
 }
