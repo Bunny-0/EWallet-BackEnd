@@ -20,7 +20,7 @@ public class TransactionController {
     }
 
     @GetMapping("/getTransaction")
-    public ResponseEntity<List<Transaction>> getTransaction(@RequestBody Transaction transaction) {
+    public ResponseEntity<List<Transaction>> getTransaction(@RequestBody TransactionFilterRequest transaction) {
         List<Transaction> response = transactionService.searchData(transaction);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }

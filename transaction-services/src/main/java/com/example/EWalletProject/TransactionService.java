@@ -74,7 +74,7 @@ public class TransactionService {
     }
 
 
-    public List<Transaction> searchData(Transaction transaction) {
+    public List<Transaction> searchData(TransactionFilterRequest transaction) {
         Specification<Transaction> spec = Specification.where(null); // start safely with null
 
         if (transaction.getToUser() != null) {
@@ -93,8 +93,14 @@ public class TransactionService {
             spec = spec.and(TransactionSpecification.hasTransactionId(transaction.getTransactionId()));
         }
 
-        if (transaction.getAmount() != 0) {
+        if (transaction.getAmount() !=null) {
             spec = spec.and(TransactionSpecification.hasAmount(transaction.getAmount()));
+        }
+        if(transaction.getCreatedAfter()!=null){
+            spec=spec.and(TransactionSpecification.hasCreatedAfter(transaction.getCreatedAfter()));
+        }
+        if(transaction.getMinAmount() != null || transaction.getMaxAmount() != null) {
+            spec = spec.and(TransactionSpecification.hasAmountRange(transaction.getMinAmount(), transaction.getMaxAmount()));
         }
 
 
