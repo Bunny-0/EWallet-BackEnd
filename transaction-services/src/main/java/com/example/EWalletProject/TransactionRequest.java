@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TransactionRequest {
+
+    private String TransactionId;
     private  String fromUser;
     private String toUser;
     private int amount;

@@ -19,7 +19,7 @@ public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
-    private  String transactionId= UUID.randomUUID().toString();
+    private  String transactionId;
     private int amount;
     private String toUser;
     private String fromUser;
