@@ -1,4 +1,4 @@
-package com.example.EWalletProject;
+package com.example.EWalletProject.Exception;
 
 public class UserNotFoundException extends Exception{
     public UserNotFoundException() {

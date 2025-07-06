@@ -1,12 +1,14 @@
 package com.example.EWalletProject;
 
+import com.example.EWalletProject.Exception.MessagePublishException;
+import com.example.EWalletProject.Exception.UserNotFoundException;
+import com.example.EWalletProject.Exception.ValidationFailedException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,7 +18,6 @@ import javax.transaction.Transactional;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -52,7 +53,7 @@ public class UserService {
 
         futureData.thenAccept(contractIndex -> {
             if (!contractIndex.getStatus().equals(ContractStatus.ACTIVE)) {
-                throw new RuntimeException("Product Data not valid");
+                throw new ValidationFailedException("Product data unavailable");
             }
             userRepository.save(user);
             saveInCache(user);
@@ -104,6 +105,7 @@ public class UserService {
             } catch (Exception e) {
                 System.err.println("❌ Kafka failed: " + e.getMessage());
                 event.setStatus("FAILED");
+                throw new MessagePublishException("Kafka publish failed for eventType");
             }
 
             outboxEventRepository.save(event);
