@@ -1,6 +1,7 @@
 package com.example.EWalletProject;
 
 import com.example.EWalletProject.Exception.MessagePublishException;
+import com.example.EWalletProject.Exception.ProductNotFoundException;
 import com.example.EWalletProject.Exception.UserNotFoundException;
 import com.example.EWalletProject.Exception.ValidationFailedException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
@@ -51,6 +53,7 @@ public class UserService {
         User user = User.builder().userName(userRequest.getUserName()).name(userRequest.getName()).productName(userRequest.getProductName()).age(userRequest.getAge()).email(userRequest.getEmail()).build();
         CompletableFuture<ContractIndex> futureData = fetchContract(userRequest.getProductName());
 
+
         futureData.thenAccept(contractIndex -> {
             if (!contractIndex.getStatus().equals(ContractStatus.ACTIVE)) {
                 throw new ValidationFailedException("Product data unavailable");
@@ -81,18 +84,23 @@ public class UserService {
 
 
     @Async
-    public CompletableFuture<ContractIndex> fetchContract(String productName) {
+    public CompletableFuture<ContractIndex> fetchContract(String productName) throws ProductNotFoundException {
         String url = "http://localhost:9045/api/contracts/elastic/product/" + productName;
-
-        ResponseEntity<ContractIndex> response = restTemplate.getForEntity(
-                url,
-                ContractIndex.class
-        );
-
-        return CompletableFuture.completedFuture(response.getBody());
-
-
+        try {
+            ResponseEntity<ContractIndex> response = restTemplate.getForEntity(url, ContractIndex.class);
+            ContractIndex body = response.getBody();
+            if (body != null) {
+                return CompletableFuture.completedFuture(body);
+            } else {
+                throw new ProductNotFoundException("Empty product response for: " + productName);
+            }
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new ProductNotFoundException("Product not found in external service: " + productName);
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching contract for: " + productName, e);
+        }
     }
+
 
     @Scheduled(fixedDelay = 5000)
     public void processOutboxEvents() {

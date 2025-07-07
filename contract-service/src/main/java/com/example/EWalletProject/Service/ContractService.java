@@ -39,10 +39,12 @@ public class ContractService {
         return contractIndex;
     }
     public Optional<ContractIndex> searchFromElastic(String id) {
-        return elasticRepository.findById(Integer.parseInt(id));
+        Optional<ContractIndex> data= elasticRepository.findById(Integer.parseInt(id));
+        return data;
     }
 
     public Optional<ContractIndex> searchByProductName(String name){
-        return elasticRepository.findByProductName(name);
+        Optional<ContractIndex> data=elasticRepository.findByProductName(name);
+        return data;
     }
 }
