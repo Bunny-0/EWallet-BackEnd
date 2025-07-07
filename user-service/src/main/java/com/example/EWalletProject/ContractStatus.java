@@ -5,5 +5,6 @@ public enum ContractStatus {
 
     ACTIVE,
     INACTIVE,
-    SUSPENDED
+    SUSPENDED,
+    NOT_FOUND
 }

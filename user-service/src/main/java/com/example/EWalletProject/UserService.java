@@ -4,7 +4,9 @@ import com.example.EWalletProject.Exception.MessagePublishException;
 import com.example.EWalletProject.Exception.ProductNotFoundException;
 import com.example.EWalletProject.Exception.UserNotFoundException;
 import com.example.EWalletProject.Exception.ValidationFailedException;
+import com.example.EWalletProject.Utils.FetchData;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +40,7 @@ public class UserService {
     OutboxEventRepository outboxEventRepository;
 
     @Autowired
-    RestTemplate restTemplate;
+    FetchData fetchData;
 
     @Autowired
     pushToKafka pushToKafka;
@@ -51,12 +53,10 @@ public class UserService {
     @Transactional
     public UserRequest createUser(UserRequest userRequest) {
         User user = User.builder().userName(userRequest.getUserName()).name(userRequest.getName()).productName(userRequest.getProductName()).age(userRequest.getAge()).email(userRequest.getEmail()).build();
-        CompletableFuture<ContractIndex> futureData = fetchContract(userRequest.getProductName());
+        ContractIndex futureData = fetchData.fetchContract(userRequest.getProductName());
 
-
-        futureData.thenAccept(contractIndex -> {
-            if (!contractIndex.getStatus().equals(ContractStatus.ACTIVE)) {
-                throw new ValidationFailedException("Product data unavailable");
+            if (!futureData.getStatus().equals(ContractStatus.ACTIVE)) {
+                throw new ValidationFailedException("Product data "+futureData.getProductName()+" is "+futureData.getStatus());
             }
             userRepository.save(user);
             saveInCache(user);
@@ -69,37 +69,20 @@ public class UserService {
             event.setStatus("PENDING");
 
             outboxEventRepository.save(event);
+            userRequest.setId(user.getId());
+            userRequest.setStatus(Status.PROCESSING);
 
 
-        }).exceptionally(ex -> {
-            ex.printStackTrace();
-            return null;
-        });
-        userRequest.setId(user.getId());
-        userRequest.setStatus(Status.PROCESSING);
+
+
 
         return userRequest;
 
+
     }
 
 
-    @Async
-    public CompletableFuture<ContractIndex> fetchContract(String productName) throws ProductNotFoundException {
-        String url = "http://localhost:9045/api/contracts/elastic/product/" + productName;
-        try {
-            ResponseEntity<ContractIndex> response = restTemplate.getForEntity(url, ContractIndex.class);
-            ContractIndex body = response.getBody();
-            if (body != null) {
-                return CompletableFuture.completedFuture(body);
-            } else {
-                throw new ProductNotFoundException("Empty product response for: " + productName);
-            }
-        } catch (HttpClientErrorException.NotFound e) {
-            throw new ProductNotFoundException("Product not found in external service: " + productName);
-        } catch (Exception e) {
-            throw new RuntimeException("Error fetching contract for: " + productName, e);
-        }
-    }
+
 
 
     @Scheduled(fixedDelay = 5000)
