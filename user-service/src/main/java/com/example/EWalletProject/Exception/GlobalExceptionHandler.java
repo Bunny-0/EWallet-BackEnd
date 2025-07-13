@@ -24,6 +24,17 @@ public class GlobalExceptionHandler {
 
     }
 
+    @ExceptionHandler(AuthFailedException.class)
+    public ResponseEntity<Object> handleAuthException(MessagePublishException ex) {
+
+        Map<String,Object> mp=new HashMap<>();
+        mp.put("status", HttpStatus.GATEWAY_TIMEOUT.value());
+        mp.put("error", "AuthenticationFailed");
+        mp.put("message", ex.getMessage());
+        return new ResponseEntity<>(mp,HttpStatus.UNAUTHORIZED);
+
+    }
+
     @ExceptionHandler(ValidationFailedException.class)
     public ResponseEntity<Object> handleValidationException(ValidationFailedException ex) {
 

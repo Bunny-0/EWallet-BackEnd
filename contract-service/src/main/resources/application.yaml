@@ -2,6 +2,20 @@ server:
   port: 9045
 
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://localhost:9443/oauth2/token
+  ssl:
+    trust-store: classpath:truststore.jks
+#  security:
+#    oauth2:
+#      client:
+#        registration:
+#          github:
+#            clientId: Ov23liyUbQErJffy9OYV
+#            clientSecret: c98de1209ebda86979b03ec5816e103f19f255d4
   application:
     name: contract-service
   zipkin:
@@ -18,7 +32,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -47,5 +61,3 @@ logging:
 
   pattern:
     console: "%d{HH:mm:ss.SSS} %-5level [${PID}] [thread=%t] [traceId=%X{X-B3-TraceId}, spanId=%X{X-B3-SpanId}] %logger{36} - %msg%n"
-
-
