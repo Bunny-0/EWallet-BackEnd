@@ -10,6 +10,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.Table;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
@@ -22,18 +25,28 @@ public class WalletService {
     KafkaTemplate<String,String> kafkaTemplate;
     @Autowired
     ObjectMapper objectMapper;
+
+    ExecutorService executorService = Executors.newFixedThreadPool(10);
     @KafkaListener(topics = {"create_wallet"},groupId = "friends_group")
 
     public void createWallet(String message) throws JsonProcessingException {
 
-        log.info(
-                "Received message to create wallet: {}",
-                message
-        );
-        JSONObject walletRequest=objectMapper.readValue(message,JSONObject.class);
-        String userName=(String)walletRequest.get("userName");
-        Wallet wallet=Wallet.builder().userName(userName).balance(0).build();
-        walletRepository.save(wallet);
+        executorService.submit(() -> {
+            try {
+                log.info(
+                        "Received message to create wallet: {}",
+                        message
+                );
+                JSONObject walletRequest = null;
+                walletRequest = objectMapper.readValue(message, JSONObject.class);
+                String userName = (String) walletRequest.get("userName");
+                Wallet wallet = Wallet.builder().userName(userName).balance(0).build();
+                walletRepository.save(wallet);
+            }catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
 
     }
 

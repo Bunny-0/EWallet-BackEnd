@@ -19,6 +19,7 @@ public class TransactionSpecification {
                 id != null ? builder.equal(root.get("transactionId"), id) : null;
     }
 
+
     public static Specification<Transaction> hasToUser(String toUser) {
         return (root, query, builder) ->
                 toUser != null ? builder.equal(root.get("toUser"), toUser) : null;

@@ -2,6 +2,7 @@ package com.example.EWalletProject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -14,12 +15,18 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import javax.transaction.Transactional;
 import java.net.URI;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Service
+@Slf4j
 public class TransactionService {
 
     @Autowired
@@ -38,9 +45,21 @@ public class TransactionService {
     @Autowired
     SpecificationRepository sp;
 
-    public TransactionRequest createTransaction(TransactionRequest transactionRequest) {
+    ReadWriteLock lock=new ReentrantReadWriteLock();
+    Lock writeLock = lock.writeLock();
+
+    @Transactional
+    public TransactionRequest createTransaction(TransactionRequest transactionRequest) throws ExecutionException, InterruptedException {
         Transaction transaction = Transaction.builder().toUser(transactionRequest.getToUser()).fromUser(transactionRequest.getFromUser()).transactionStatus("PENDING").amount(transactionRequest.getAmount()).transactionId(UUID.randomUUID().toString()).transactionTime(String.valueOf(new Date())).build();
-        Transaction savedData = transactionRepository.save(transaction);
+
+        Transaction savedData;
+
+        writeLock.lock();
+        try {
+            savedData = transactionRepository.save(transaction);
+        } finally {
+            writeLock.unlock(); // Ensures lock is always released
+        }
         //send the message to kafka to update the wallet
         //send the message to kafka to update the wallet
         JSONObject walletRequest = new JSONObject();
@@ -49,7 +68,18 @@ public class TransactionService {
         walletRequest.put("amount", transactionRequest.getAmount());
         walletRequest.put("transactionId", transaction.getTransactionId());
         String message = walletRequest.toString();
-        kafkaTemplate.send("update_wallet", message);
+       CompletableFuture<String> completableFuture= CompletableFuture.supplyAsync(()-> {
+           try {
+               kafkaTemplate.send("update_wallet", message).get();
+           } catch (InterruptedException e) {
+               throw new RuntimeException(e);
+           } catch (ExecutionException e) {
+               throw new RuntimeException(e);
+           }
+           return "Published to update_wallet topic successfully.";
+       });
+       log.info(completableFuture.get());
+
         TransactionRequest res = TransactionRequest.builder().amount(savedData.getAmount())
                 .fromUser(savedData.getFromUser())
                 .toUser(savedData.getToUser())
@@ -60,14 +90,21 @@ public class TransactionService {
     }
 
     @KafkaListener(topics = {"update_transaction"}, groupId = "friends_group")
-    public void updateTransaction(String message) throws JsonProcessingException {
+    @Transactional
+    public void updateTransaction(String message) throws JsonProcessingException, ExecutionException, InterruptedException {
         JSONObject transactionRequest = objectMapper.readValue(message, JSONObject.class);
         String transactionStatus = (String) transactionRequest.get("transactionStatus");
         String transactionId = (String) transactionRequest.get("transactionId");
         Transaction t = transactionRepository.findByTransactionId(transactionId);
         t.setTransactionStatus(transactionStatus);
-        transactionRepository.save(t);
+        Transaction savedData;
 
+        writeLock.lock();
+        try {
+            savedData = transactionRepository.save(t);
+        } finally {
+            writeLock.unlock();
+        }
         //call notification service and send mails
         callNotificationService(t);
 
@@ -107,19 +144,28 @@ public class TransactionService {
         return sp.findAll(spec);
     }
 
-    public void callNotificationService(Transaction transaction) {
+    public void callNotificationService(Transaction transaction) throws ExecutionException, InterruptedException {
         //Fetch IS EMAIL FROM USER SERVICE
+        ExecutorService executorService = Executors.newFixedThreadPool(4);
         String fromUser = transaction.getFromUser();
         String toUser = transaction.getToUser();
         String transactionId = transaction.getTransactionId();
         HttpEntity httpEntity = new HttpEntity(new HttpHeaders());
-        URI url = URI.create("http://localhost:8076/user?userName=" + fromUser);
-        JSONObject fromUserObject = restTemplate.exchange(url, HttpMethod.GET, httpEntity, JSONObject.class).getBody();
+        Callable<JSONObject> callable1 = () -> {
+            URI url = URI.create("http://localhost:8076/user?userName=" + fromUser);
+            return restTemplate.exchange(url, HttpMethod.GET, httpEntity, JSONObject.class).getBody();
+        };
+        Callable<JSONObject> callable2 = () -> {
+            URI url = URI.create("http://localhost:8076/user?userName=" + toUser);
+            return restTemplate.exchange(url, HttpMethod.GET, httpEntity, JSONObject.class).getBody();
+        };
+        Future<JSONObject> future1=executorService.submit(callable1);
+        Future<JSONObject> future2=executorService.submit(callable2);
+        JSONObject fromUserObject =future1.get();
+        JSONObject toUserObject = future2.get();
         String senderEmail = (String) fromUserObject.get("email");
         String senderName = (String) fromUserObject.get("name");
 
-        url = URI.create("http://localhost:8076/user?userName=" + toUser);
-        JSONObject toUserObject = restTemplate.exchange(url, HttpMethod.GET, httpEntity, JSONObject.class).getBody();
         String receiverEmail = (String) toUserObject.get("email");
         String recieverName = (String) toUserObject.get("name");
 

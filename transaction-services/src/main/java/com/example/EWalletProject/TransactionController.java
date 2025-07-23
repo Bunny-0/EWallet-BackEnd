@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @RestController
 public class TransactionController {
@@ -13,7 +14,7 @@ public class TransactionController {
     @Autowired
     TransactionService transactionService;
     @PostMapping("/create")
-    public ResponseEntity<TransactionRequest> createTransaction(@RequestBody() TransactionRequest transactionRequest){
+    public ResponseEntity<TransactionRequest> createTransaction(@RequestBody() TransactionRequest transactionRequest) throws ExecutionException, InterruptedException {
         TransactionRequest response =transactionService.createTransaction(transactionRequest);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
 
