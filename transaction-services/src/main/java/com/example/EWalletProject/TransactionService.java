@@ -109,6 +109,23 @@ public class TransactionService {
         callNotificationService(t);
 
     }
+    @KafkaListener(topics = {"rollBack_Transaction"}, groupId = "friends_group")
+    public void rollBackTransaction(String transactionId) {
+        try {
+            writeLock.lock();
+            Transaction transaction = transactionRepository.findByTransactionId(transactionId);
+            if (transaction != null) {
+                transactionRepository.delete(transaction);
+                log.info("Rolled back transaction for ID: {}", transactionId);
+            } else {
+                log.warn("No transaction found for ID: {}", transactionId);
+            }
+        } catch (Exception e) {
+            log.error("Error rolling back transaction for ID {}: {}", transactionId, e.getMessage());
+        } finally {
+            writeLock.unlock();
+        }
+    }
 
 
     public List<Transaction> searchData(TransactionFilterRequest transaction) {

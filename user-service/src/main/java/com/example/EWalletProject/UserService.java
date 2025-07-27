@@ -137,4 +137,21 @@ public class UserService {
 
 
     }
+
+    public User findUserByEmail(String email) throws UserNotFoundException {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new UserNotFoundException();
+        }
+        return user;
+    }
+    public User deleteUser(String userName) throws UserNotFoundException {
+        User user = userRepository.findByUserName(userName);
+        if (user == null) {
+            throw new UserNotFoundException();
+        }
+        userRepository.delete(user);
+        redisTemplate.delete(REDIS_PREFIX_KEY + userName);
+        return user;
+    }
 }

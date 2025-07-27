@@ -10,9 +10,10 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.Table;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import javax.transaction.Transactional;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Service
 @Slf4j
@@ -22,16 +23,17 @@ public class WalletService {
     WalletRepository walletRepository;
 
     @Autowired
-    KafkaTemplate<String,String> kafkaTemplate;
-    @Autowired
     ObjectMapper objectMapper;
 
     ExecutorService executorService = Executors.newFixedThreadPool(10);
-    @KafkaListener(topics = {"create_wallet"},groupId = "friends_group")
 
-    public void createWallet(String message) throws JsonProcessingException {
+    ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    Lock writeLock = lock.writeLock();
+    Lock readLock = lock.readLock();
 
+    public void createWallet(String message) throws Exception {
         executorService.submit(() -> {
+            String userName = null;
             try {
                 log.info(
                         "Received message to create wallet: {}",
@@ -39,10 +41,12 @@ public class WalletService {
                 );
                 JSONObject walletRequest = null;
                 walletRequest = objectMapper.readValue(message, JSONObject.class);
-                String userName = (String) walletRequest.get("userName");
+                userName = (String) walletRequest.get("userName");
                 Wallet wallet = Wallet.builder().userName(userName).balance(0).build();
+                writeLock.lock();
                 walletRepository.save(wallet);
-            }catch (JsonProcessingException e) {
+                writeLock.unlock();
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
@@ -50,49 +54,83 @@ public class WalletService {
 
     }
 
-    @KafkaListener(topics = {"update_wallet"},groupId = "friends_group")
-    public void updateWallet(String message) throws JsonProcessingException {
-        JSONObject walletRequest=objectMapper.readValue(message,JSONObject.class);
-        String fromUser=(String)walletRequest.get("fromUser");
-        String toUser=(String)walletRequest.get("toUser");
-        int transactionAmount=(Integer)walletRequest.get("amount");
-        String transactionId=(String)walletRequest.get("transactionId");
-        //Check balance from user
-        //deduct the senders money
-        //if fail then send status as fail(if balanceis not sufficient otherwise deduct the semders money , add the receivers money send teh status success
-        Wallet sendersWallet=walletRepository.findByUserName(fromUser);
-        if(sendersWallet.getBalance()>=transactionAmount){
 
-            Wallet fromWallet=walletRepository.findByUserName(fromUser);
-            fromWallet.setBalance(fromWallet.getBalance()-transactionAmount);
-            walletRepository.save(fromWallet);
+    public void rollBackWallet(String userName) {
+        try {
+            writeLock.lock();
+            Wallet wallet = walletRepository.findByUserName(userName);
+            if (wallet != null) {
+                walletRepository.delete(wallet);
+                log.info("Rolled back wallet for user: {}", userName);
+            } else {
+                log.warn("No wallet found for user: {}", userName);
+            }
+        } catch (Exception e) {
+            log.error("Error rolling back wallet for user {}: {}", userName, e.getMessage());
+        } finally {
+            writeLock.unlock();
+        }
+    }
 
-            Wallet toWallet=walletRepository.findByUserName(toUser);
-            toWallet.setBalance(toWallet.getBalance()+transactionAmount);
-            walletRepository.save(toWallet);
+
+    @Transactional
+    public String updateWallet(String message) throws JsonProcessingException {
+
+        try {
+            executorService.submit(() -> {
+                JSONObject walletRequest = null;
+                try {
+                    walletRequest = objectMapper.readValue(message, JSONObject.class);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                String fromUser = (String) walletRequest.get("fromUser");
+                String toUser = (String) walletRequest.get("toUser");
+                int transactionAmount = (Integer) walletRequest.get("amount");
+                String transactionId = (String) walletRequest.get("transactionId");
+                //Check balance from user
+                //deduct the senders money
+                //if fail then send status as fail(if balanceis not sufficient otherwise deduct the semders money , add the receivers money send teh status success
+                Wallet sendersWallet = walletRepository.findByUserName(fromUser);
+                if (sendersWallet.getBalance() >= transactionAmount) {
+
+                    Wallet fromWallet = walletRepository.findByUserName(fromUser);
+                    fromWallet.setBalance(fromWallet.getBalance() - transactionAmount);
+                    Wallet toWallet = walletRepository.findByUserName(toUser);
+                    toWallet.setBalance(toWallet.getBalance() + transactionAmount);
+                    writeLock.lock();
+                    walletRepository.save(fromWallet);
+                    walletRepository.save(toWallet);
 
 //            walletRepository.updateWallet(fromUser,-1*transactionAmount);
 //            walletRepository.updateWallet(toUser,transactionAmount);
 
-            //PushTokafka
-            JSONObject sendToTransaction =new JSONObject();
-            sendToTransaction.put("transactionId",transactionId);
-            sendToTransaction.put("transactionStatus","SUCCESS");
-            String sendMessage=sendToTransaction.toString();
-            kafkaTemplate.send("update_transaction",sendMessage);
+                    //PushTokafka
+                    JSONObject sendToTransaction = new JSONObject();
+                    sendToTransaction.put("transactionId", transactionId);
+                    sendToTransaction.put("transactionStatus", "SUCCESS");
+                    String sendMessage = sendToTransaction.toString();
+                    return sendMessage;
 
-        }else{
+                } else {
 
-            JSONObject sendToTransaction =new JSONObject();
-            sendToTransaction.put("transactionId",transactionId);
-            sendToTransaction.put("transactionStatus","FAILED");
-            String sendMessage=sendToTransaction.toString();
-            kafkaTemplate.send("update_transaction",sendMessage);
+                    JSONObject sendToTransaction = new JSONObject();
+                    sendToTransaction.put("transactionId", transactionId);
+                    sendToTransaction.put("transactionStatus", "FAILED");
+                    String sendMessage = sendToTransaction.toString();
+                    return sendMessage;
 
+                }
+            });
+        } catch (Exception e) {
+            log.error("Error processing update_wallet message: {}", e.getMessage());
+        } finally {
+            writeLock.unlock();
         }
 
-
+    return "Update wallet operation completed";
     }
+}
 //    public Wallet incrementWallet(String userName,int amount){
 //        Wallet oldWallet= walletRepository.findByUserName(userName);
 //        int newAmount=oldWallet.getAmount()+amount;
@@ -114,4 +152,3 @@ public class WalletService {
 //        walletRepository.save(updateWallet);
 //        return updateWallet;
 //    }
-}
