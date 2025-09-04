@@ -10,6 +10,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
@@ -44,6 +45,10 @@ public class UserService {
 
     @Autowired
     pushToKafka pushToKafka;
+
+    @Autowired
+    static
+    SpecificationRepository sp;
 
 
     public final String REDIS_PREFIX_KEY = "user::";
@@ -136,6 +141,25 @@ public class UserService {
         }
 
 
+    }
+
+    public static List<User> searchUser(User user){
+
+        Specification<User> spec = Specification.where(null);
+        if(user.getId()!=0){
+            spec=spec.and(UserSpecification.hasId(String.valueOf(user.getId())));
+        }
+        if(user.getName()!=null){
+            spec=spec.and(UserSpecification.hasName(user.getName()));
+        }
+
+        if(user.getAge()!=0){
+            spec=spec.and(UserSpecification.hasAgeGreaterThan(user.getAge()));
+        }
+        if(user.getEmail()!=null){
+            spec=spec.and(UserSpecification.hasEmail(user.getEmail()));
+        }
+        return sp.findAll(spec);
     }
 
     public User findUserByEmail(String email) throws UserNotFoundException {

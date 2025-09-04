@@ -78,6 +78,10 @@ public class TransactionService {
            }
            return "Published to update_wallet topic successfully.";
        });
+       completableFuture.thenAccept(result ->{
+          System.out.println(result);
+       });
+
        log.info(completableFuture.get());
 
         TransactionRequest res = TransactionRequest.builder().amount(savedData.getAmount())

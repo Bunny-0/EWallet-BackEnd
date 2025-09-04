@@ -1,14 +1,14 @@
 server:
   port: 9045
 
-spring:
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://localhost:9443/oauth2/token
-  ssl:
-    trust-store: classpath:truststore.jks
+#spring:
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: https://localhost:9443/oauth2/token
+#  ssl:
+#    trust-store: classpath:truststore.jks
 #  security:
 #    oauth2:
 #      client:
@@ -18,12 +18,12 @@ spring:
 #            clientSecret: c98de1209ebda86979b03ec5816e103f19f255d4
   application:
     name: contract-service
-  zipkin:
-    base-url: http://localhost:9411
-    enabled: true
-  sleuth:
-    sampler:
-      probability: 1.0
+#  zipkin:
+#    base-url: http://localhost:9411
+#    enabled: true
+#  sleuth:
+#    sampler:
+#      probability: 1.0
   datasource:
     url: jdbc:mysql://localhost:3306/contractDb
     username: root
@@ -38,16 +38,16 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
 
-  data:
-    elasticsearch:
-      client:
-        reactive:
-          endpoints: localhost:9200
-      repositories:
-        enabled: true
-
-  elasticsearch:
-    uris: http://localhost:9200
+#  data:
+#    elasticsearch:
+#      client:
+#        reactive:
+#          endpoints: localhost:9200
+#      repositories:
+#        enabled: true
+#
+#  elasticsearch:
+#    uris: http://localhost:9200
 
 logging:
   file:
@@ -59,5 +59,5 @@ logging:
     org.springframework.cloud.sleuth.instrument: DEBUG
     org.springframework.cloud.sleuth.instrument.web.client.TraceRestTemplateInterceptor: DEBUG
 
-  pattern:
-    console: "%d{HH:mm:ss.SSS} %-5level [${PID}] [thread=%t] [traceId=%X{X-B3-TraceId}, spanId=%X{X-B3-SpanId}] %logger{36} - %msg%n"
+#  pattern:
+#    console: "%d{HH:mm:ss.SSS} %-5level [${PID}] [thread=%t] [traceId=%X{X-B3-TraceId}, spanId=%X{X-B3-SpanId}] %logger{36} - %msg%n"
