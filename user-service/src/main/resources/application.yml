@@ -1,24 +1,36 @@
 server:
   port: 8076
+management:
+  health:
+    redis:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers,prometheus
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
 spring:
+  security:
+    user:
+      name: admin
+      password: admin123
+
   application:
     name: user-service
-  zipkin:
-    base-url: http://localhost:9411
-    enabled: true
-  sleuth:
-    sampler:
-      probability: 1.0
-
 
   datasource:
     url: jdbc:mysql://localhost:3306/userdb?createTableIfNotExists=true
     username: root
-    password: MyNewPassword
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 25
+
+
 
   jpa:
     hibernate:
@@ -38,31 +50,32 @@ logging:
   pattern:
     console: "%d{HH:mm:ss.SSS} %-5level [${PID}] [thread=%t] [traceId=%X{X-B3-TraceId}, spanId=%X{X-B3-SpanId}] %logger{36} - %msg%n"
 
-resilence4j:
+resilience4j:
   circuitbreaker:
     instances:
       contractServiceCB:
         sliding-window-size: 10
         minimum-number-of-calls: 5
         permitted-number-of-calls-in-half-open-state: 2
-        wait-duration-in-open-state: 10000
+        wait-duration-in-open-state: 10s  # better use '10s' format
         failure-rate-threshold: 50
         event-consumer-buffer-size: 10
+
   retry:
     instances:
       contractServiceRetry:
         max-attempts: 3
-        wait-duration: 1000
+        wait-duration: 1s
         retry-exceptions:
           - org.springframework.web.client.HttpServerErrorException
           - org.springframework.web.client.ResourceAccessException
         ignore-exceptions:
           - java.lang.IllegalArgumentException
           - com.example.EWalletProject.Exception.ProductNotFoundException
+
   ratelimiter:
     instances:
       contractServiceRateLimiter:
         limit-for-period: 10
         limit-refresh-period: 1s
         timeout-duration: 0s
-

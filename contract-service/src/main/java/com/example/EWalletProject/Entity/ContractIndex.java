@@ -11,7 +11,6 @@ import javax.persistence.Column;
 
 @Document(indexName = "contracts")
 @Getter
-@NoArgsConstructor
 @Setter
 public class ContractIndex {
 
@@ -43,5 +42,9 @@ public class ContractIndex {
         this.dailyLimit = dailyLimit;
         this.yearlyLimit = yearlyLimit;
         this.status = status;
+    }
+
+    public ContractIndex() {
+
     }
 }

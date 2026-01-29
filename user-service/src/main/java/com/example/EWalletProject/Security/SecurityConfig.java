@@ -26,14 +26,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain security(HttpSecurity http) throws Exception{
-
-        http.authorizeHttpRequests( (req) ->
-                req.antMatchers("/hi")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated()
-        ).formLogin();
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf().disable()
+                .authorizeRequests()
+                .antMatchers("/actuator/**").permitAll()
+                .antMatchers("/createUser*").authenticated()
+                .anyRequest().permitAll()
+                .and()
+                .httpBasic();
 
         return http.build();
     }

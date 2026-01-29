@@ -16,6 +16,7 @@ server:
 #          github:
 #            clientId: Ov23liyUbQErJffy9OYV
 #            clientSecret: c98de1209ebda86979b03ec5816e103f19f255d4
+spring:
   application:
     name: contract-service
 #  zipkin:
@@ -27,7 +28,7 @@ server:
   datasource:
     url: jdbc:mysql://localhost:3306/contractDb
     username: root
-    password: MyNewPassword
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -48,6 +49,54 @@ server:
 #
 #  elasticsearch:
 #    uris: http://localhost:9200
+resilience4j:
+  circuitbreaker:
+    instances:
+      contract-service-cb:
+        registerHealthIndicator: true
+        slidingWindowSize: 6
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 6
+  retry:
+    instances:
+      contract-service-retry:
+        max-attempts: 3
+        waitDuration: 2s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
+  timelimiter:
+    instances:
+      contract-service-tL:
+        contract-service-timeout:
+          timeOutDuration: 5s
+          cancelRunningFuture: true
+
+  ratelimiter:
+    instances:
+      contract-service-rateLimit:
+        limitForPeriod: 5
+        limitRefreshPeriod: 1s
+
+  bulkhead:
+    instances:
+      transactionBulkHead:
+        maxConcurrentCalls: 10
+        maxWaitDuration: 2s
+      notificationBulkhead:
+        coreThreadPoolSize: 5
+        maxThreadPoolSize: 10
+        queueCapacity: 20
+
+
+
+
+
+
+
+
 
 logging:
   file:

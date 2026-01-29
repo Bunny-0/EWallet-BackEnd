@@ -42,6 +42,7 @@ public class FetchData {
 
     }
     public ContractIndex contractServiceRL(String productName, Throwable ex) {
+
         ContractIndex res=new ContractIndex();
         res.setStatus(ContractStatus.INACTIVE);
         res.setProductName(productName);

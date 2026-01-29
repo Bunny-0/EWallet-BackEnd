@@ -24,6 +24,7 @@ public class ContractController {
     }
 
     @GetMapping("/elastic/id/{id}")
+    
     public ContractIndex getFromElastic(@PathVariable String id) {
         return contractService.searchFromElastic(id)
                 .orElseThrow(() -> new RuntimeException("Not found"));

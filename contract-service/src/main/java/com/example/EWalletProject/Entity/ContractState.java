@@ -7,7 +7,11 @@ import lombok.Setter;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "contracts")
+@Table(name = "contracts",
+indexes = {
+        @Index(name = "contractIdx",columnList = "id"),
+        @Index(name="contractNumIdx",columnList = "contractNumber")
+})
 @Getter
 @Setter
 public class ContractState {

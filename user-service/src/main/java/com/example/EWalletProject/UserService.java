@@ -1,29 +1,22 @@
 package com.example.EWalletProject;
 
 import com.example.EWalletProject.Exception.MessagePublishException;
-import com.example.EWalletProject.Exception.ProductNotFoundException;
 import com.example.EWalletProject.Exception.UserNotFoundException;
 import com.example.EWalletProject.Exception.ValidationFailedException;
 import com.example.EWalletProject.Utils.FetchData;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 
 import javax.transaction.Transactional;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -54,7 +47,6 @@ public class UserService {
     public final String REDIS_PREFIX_KEY = "user::";
     public final String CREATE_WALLET = "create_wallet";
 
-
     @Transactional
     public UserRequest createUser(UserRequest userRequest) {
         User user = User.builder().userName(userRequest.getUserName()).name(userRequest.getName()).productName(userRequest.getProductName()).age(userRequest.getAge()).email(userRequest.getEmail()).build();
@@ -63,6 +55,7 @@ public class UserService {
             if (!futureData.getStatus().equals(ContractStatus.ACTIVE)) {
                 throw new ValidationFailedException("Product data "+futureData.getProductName()+" is "+futureData.getStatus());
             }
+
             userRepository.save(user);
             saveInCache(user);
             JSONObject walletRequest = new JSONObject();
@@ -94,6 +87,7 @@ public class UserService {
     public void processOutboxEvents() {
         List<OutboxEvent> pendingEvents = outboxEventRepository.findByStatus("PENDING");
         System.out.println("Processing " + pendingEvents.toString() + " pending events...");
+
         for (OutboxEvent event : pendingEvents) {
             try {
                 pushToKafka.sendEvents(event.getEventType(), event.getPayload()).get(); // sync send
@@ -144,6 +138,7 @@ public class UserService {
     }
 
     public static List<User> searchUser(User user){
+
 
         Specification<User> spec = Specification.where(null);
         if(user.getId()!=0){

@@ -5,12 +5,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.Table;
 import javax.transaction.Transactional;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -25,11 +27,16 @@ public class WalletService {
     @Autowired
     ObjectMapper objectMapper;
 
+    @Autowired
+           static SpecificationRepository specificationRepository;
+
     ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     Lock writeLock = lock.writeLock();
     Lock readLock = lock.readLock();
+
+
 
     public void createWallet(String message) throws Exception {
         executorService.submit(() -> {
@@ -129,6 +136,18 @@ public class WalletService {
         }
 
     return "Update wallet operation completed";
+    }
+
+    public static List<Wallet> filterData(Wallet wallet){
+        Specification<Wallet> spec=Specification.where(null);
+
+        if(wallet.getId()!=0){
+            spec=spec.and(WalletSpecification.hasId(wallet.getId()==0?null:wallet.getId()));
+        }
+        if(wallet.getUserName()!=null){
+            spec=spec.and(WalletSpecification.hasUerName(wallet.getUserName()));
+        }
+        return  specificationRepository.findAll();
     }
 }
 //    public Wallet incrementWallet(String userName,int amount){
