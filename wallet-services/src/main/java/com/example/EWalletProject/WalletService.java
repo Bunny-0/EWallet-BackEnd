@@ -1,5 +1,7 @@
 package com.example.EWalletProject;
 
+import com.example.EWalletProject.sharding.HashShardStrategy;
+import com.example.EWalletProject.sharding.ShardContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +39,12 @@ public class WalletService {
     Lock readLock = lock.readLock();
 
 
+    @Autowired
+    HashShardStrategy shardStrategy;
 
     public void createWallet(String message) throws Exception {
+
+
         executorService.submit(() -> {
             String userName = null;
             try {
@@ -49,12 +55,16 @@ public class WalletService {
                 JSONObject walletRequest = null;
                 walletRequest = objectMapper.readValue(message, JSONObject.class);
                 userName = (String) walletRequest.get("userName");
+                int shard = shardStrategy.getShardId(userName);
+                ShardContext.setCurrentShard(shard);
                 Wallet wallet = Wallet.builder().userName(userName).balance(0).build();
                 writeLock.lock();
                 walletRepository.save(wallet);
                 writeLock.unlock();
             } catch (Exception e) {
                 throw new RuntimeException(e);
+            }finally {
+                ShardContext.clear();
             }
         });
 

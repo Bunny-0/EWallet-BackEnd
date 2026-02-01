@@ -2,14 +2,38 @@ server:
   port: 6000
 
 spring:
+  shard:
+    count: 4
+
   zipkin:
     base-url: http://localhost:9412
     enabled: true
   datasource:
-    url: jdbc:mysql://localhost:3306/walletdb?createTableIfNotExists=true
-    username: root
-    password: MyNewPassword
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    shard0:
+      url: jdbc:mysql://localhost:3306/walletdb_shard0?createTableIfNotExists=true
+      username: root
+      password: MyNewPassword
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    shard1:
+      url: jdbc:mysql://localhost:3306/walletdb_shard1?createTableIfNotExists=true
+      username: root
+      password: MyNewPassword
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    shard2:
+      url: jdbc:mysql://localhost:3306/walletdb_shard2?createTableIfNotExists=true
+      username: root
+      password: MyNewPassword
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    shard3:
+        url: jdbc:mysql://localhost:3306/walletdb_shard3?createTable
+        username: root
+        password: MyNewPassword
+        driver-class-name: com.mysql.cj.jdbc.Driver
+    shard4:
+        url: jdbc:mysql://localhost:3306/walletdb_shard4?createTableIfNotExists=true
+        username: root
+        password: MyNewPassword
+        driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
